@@ -11,11 +11,9 @@ Getting Started
    Open your terminal and run:
 
 ```
-git clone https://github.com/YOUR-USERNAME/P2P.git
+git clone https://github.com/dgsmith7/P2P-Project.git
 cd P2P
 ```
-
-Replace YOUR-USERNAME with your GitHub username.
 
 3. Compile the Java Files
    Make sure you have Java (JDK 8 or higher) installed. Then, compile all .java files:
@@ -34,8 +32,12 @@ java P2p
 5. Usage
    When prompted, enter a 4-digit port number to start your peer server.
    Use the following commands:
-   connect <ipAddress> <port> — Connect to another peer (e.g., connect localhost 3000)
-   send <message> — Send a message to all connected peers (e.g., send Hello!)
-   help — List available commands
-   quit — Exit the application
-   To chat between two peers, run the application on two different terminals (possibly on different machines or using different ports), and use the connect command to connect them.
+
+```
+connect <ipAddress> <port> — Connect to another peer (e.g., connect localhost 3000)
+send <message> — Send a message to all connected peers (e.g., send Hello!)
+help — List available commands
+quit — Exit the application
+```
+
+To chat between two peers, run the application on two different terminals (possibly on different machines or using different ports), and use the connect command to connect them.

@@ -1,62 +1,35 @@
 
-public class ChatServer implements Runnable {
+import java.io.*;
+import java.net.*;
+import java.util.ArrayList;
 
-    private ThreadMessage threadMessage = new ThreadMessage();
-    public boolean isConnected = false;
+public class ChatServer {
 
-    public ChatServer(ThreadMessage _threadMessage) {
-        this.threadMessage = _threadMessage;
+    public ServerSocket serverSocket;
+    private ClientConnectionManager connectionManager; // waits for peers and connects them
+    public ArrayList<Integer> ports = new ArrayList<>(); // port numbers of clients
+    public ArrayList<Socket> clients = new ArrayList<>(); // sockets of clients
+    public ArrayList<PrintWriter> clientWriters = new ArrayList<>(); // outputs of clients
+
+    public ChatServer(int _portNumber) {
+        try { // connect server socket, add connection mgr, and launch thread
+            this.serverSocket = new ServerSocket(_portNumber);
+            this.connectionManager = new ClientConnectionManager(this);
+            new Thread(this.connectionManager).start();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void run() {
-        synchronized (threadMessage) {
-            try {
-               threadMessage.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
- //      try {
-        switch(threadMessage.command) {
-        case "await" -> {
-            // open socket and wait for a client to connect
-            System.out.println("await");
-            // ServerSocket serverSocket = new ServerSocket(threadMessage.serverPort);
-            // System.out.println("Server started on "+threadMessage.serverPort+". Waiting for a client...");
-            break;
-        }
-        case "connect" -> {
-            // Connect client
-            System.out.println("connect");
-            // Socket clientSocket = serverSocket.accept();
-            // System.out.println("Client connected.");
-            // // Open input and output streams
-            // BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            // PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            break;
-        }
-        case "send" -> {
-            // Exchange data
-            System.out.println("send");
-            // String message = in.readLine();
-            // System.out.println("Client: " + message);
-            // out.println("Hello from server!");
-            break;
-        }
-        case "close" -> {            
-            // Close connections
-            System.out.println("close");
-            // in.close();
-            // out.close();
-            // clientSocket.close();
-            // serverSocket.close();
-            break;      
-        }
-//        }
-        // } catch (IOException e) {
-        //     e.printStackTrace();
-        }
-
+    public void connectToPeer(String iPAddress, int port) throws IOException {
+        Socket socket = new Socket(iPAddress, port); // new client socket
+        this.ports.add(port); // add to port list
+        this.clients.add(socket); // add to socket list
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        this.clientWriters.add(out); // add to output stream list
+        System.out.println();
+        System.out.println("Connected to " + iPAddress + ":" + port);
+        System.out.println();
     }
 }

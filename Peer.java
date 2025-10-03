@@ -1,53 +1,69 @@
 
-import java.util.Arrays;
+import java.io.*;
 
 public class Peer {
 
-    private final TextUI textUI = new TextUI();
-    private ThreadMessage threadMessage = new ThreadMessage();
-    private final ChatClient client = new ChatClient(threadMessage);
-    private final ChatServer server = new ChatServer(threadMessage);
-    private final String agent_id = System.getProperty("user.name");
-    private String state = "active";
-
-    public Peer() {
-    }
+    private final TextUI textUI = new TextUI();  // mechanism for text imputs
+    public ChatServer mainServer;  // the peer ServerSocket
+    private final String agent_id = System.getProperty("user.name"); // to ammend to front of messages
+    private String state = "active"; // quit or keep waiting for inputs
+    private String port; // port number
 
     public void run() {
-        System.out.println("Controller - Starting Client");
-        new Thread(client).start();
-        System.out.println("Controller - Starting Server");
-        new Thread(server).start();
-        //  ArrayList<String> commandAndArgs;
-        while (this.state.equals("active")) {  // repeat until game ends
-            String entry = textUI.getInput(agent_id + "--> ");
-            //  commandAndArgs = parser.parse(entry);
+        // get server port num from user and start server
+        String portInput = "";
+        while (!isValidPortNum(portInput)) {
+            portInput = textUI.getInput("Enter 4-digit port number for server: ");
+        }
+        this.port = portInput;
+        System.out.println("OK");
+        System.out.println("Starting Server on " + this.port);
+        System.out.println();
+        this.mainServer = new ChatServer(Integer.parseInt(this.port));
+        // start input loop and execute commands
+        while (this.state.equals("active")) {
+            System.out.println("Enter a command:");
+            String entry = textUI.getInput("");
             String[] commandAndArgs = entry.split("[ ]");
             String[] arguments = textUI.getArgs(commandAndArgs);
             switch (commandAndArgs[0]) {
-                case "peers" -> {
-                    this.peers("peers", arguments);
+                case "connect" -> {  // connect to a peer
+                    if (arguments.length < 2) {
+                        System.out.println();
+                        System.out.println("This command need more arguments. Try something like 'connect localhost 3000'. Type help if needed.");
+                        System.out.println();
+                        break;
+                    }
+                    try {
+                        this.mainServer.connectToPeer(arguments[0], Integer.parseInt(arguments[1]));
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
-                case "request" -> {
-                    this.request("request", arguments);
+                case "send" -> {  //  send a message
+                    synchronized (mainServer.clientWriters) {  // regulate threads
+                        for (PrintWriter writer : mainServer.clientWriters) { // each connected client
+                            System.out.println();
+                            writer.println("From " + agent_id + ": " + entry.substring(5));
+                        }
+                    }
                 }
-                case "accept" -> {
-                    this.accept("accept", arguments);
+                case "help" -> { // show commands available
+                    System.out.println("");
+                    System.out.println("Separate arguments with a space. Available commands are:");
+                    System.out.println("-----------------------");
+                    System.out.println("connect [args] - request a connection to ipAddress in[arg1] port in [arg2], such as 'connect localhost 3000'.");
+                    System.out.println("send [arg] - sends [arg] as message to connected peer, such as 'send I am awesome.'.");
+                    System.out.println("help - lists all possible commands.");
+                    System.out.println("quit - exits the program immediately.");
+                    System.out.println("");
                 }
-                case "disconnect" -> {
-                    this.disconnect("disconnect", arguments);
-                }
-                case "send" -> {
-                    this.send("send", arguments);
-                }
-                case "status" -> {
-                    this.send("status", arguments);
-                }
-                case "help" -> {
-                    this.help("help", arguments);
-                }
-                case "quit" -> {
-                    this.quit("quit", arguments);
+                case "quit" -> { // exit program
+                    System.out.println("");
+                    System.out.println("All peers disconnected. End of line.");
+                    this.state = "inactive";
+                    System.exit(0);
                 }
                 default ->
                     System.out.println("That is an invalid command - type 'help' for commands.");
@@ -55,71 +71,16 @@ public class Peer {
         }
     }
 
-// needs completion
-    public void peers(String _command, String[] _arguments) {
-        //peers - find available peers
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// needs completion
-    public void request(String _command, String[] _arguments) {
-        //request [ipAddress:port] - request connect
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// needs completion
-    public void accept(String _command, String[] _arguments) {
-        //accept - accept connection request
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// needs completion
-    public void disconnect(String _command, String[] _arguments) {
-        //disconnect [ip address:port]
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// needs completion
-    public void send(String _command, String[] _arguments) {
-        //send [arg] - send message in arg to connected peer
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// needs completion
-    public void status(String _command, String[] _arguments) {
-        //status - show connection status
-        System.out.println("Your command was " + _command);
-        System.out.println("Your arguments were " + Arrays.toString(_arguments));
-    }
-
-// completed
-    public void help(String _command, String[] _arguments) {
-        //help - list commands
-        System.out.println("");
-        System.out.println("Available commands are:");
-        System.out.println("-----------------------");
-        System.out.println("peers - see peers available to connect");
-        System.out.println("request [arg] - request a connection to ip address in [arg]");
-        System.out.println("accept - accept incoming request");
-        System.out.println("disconnect - disconnect the current connection");
-        System.out.println("send [arg] - sends [arg] as message to connected peer.");
-        System.out.println("status - displays status of connection");
-        System.out.println("help - lists all possible commands");
-        System.out.println("quit - exits the program immediately");
-        System.out.println("");
-    }
-
-// completed
-    public void quit(String _command, String[] _arguments) {
-        //quit - quit
-        System.out.println("");
-        System.out.println("All peers disconnected. End of line.");
-        System.exit(0);
+    private boolean isValidPortNum(String s) {  // ensure port input is a 4-digit number
+        if (s.length() != 4) {
+            return false;
+        }
+        for (int i = 0; i < 4; i++) {
+            if (!Character.isDigit(s.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
